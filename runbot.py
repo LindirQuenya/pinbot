@@ -6,6 +6,18 @@ from nextcord import TextChannel, Thread
 with open('token.txt', 'r') as f:
     token = f.read().strip()
 
+help_text = """
+```
+This bot has three commands:
+-pin URL    Pins a message, specified by URL.
+-unpin URL  Unpilns a message, specified by URL.
+-help       Displays this help text.
+
+A message URL may be copied by clicking a message and selecting "Copy Message Link" from the "More" menu.
+From there, just paste it after a -pin or -unpin command, and hit enter. It should pin or unpin the message.
+```
+"""
+
 bot = commands.Bot(command_prefix='-')
 
 # Type hint that url should be a str. This doesn't perform a cast, though.
@@ -37,9 +49,11 @@ def split_url(url: str):
         # The prefix wasn't found. This wasn't a url. Error value: 3.
         return 3
 
-# This passes our first argument through the parser+splitter.
+
+# The type hint passes our first argument through the parser+splitter.
 @commands.command()
 async def pin(ctx, split: split_url):
+    '''Unpins a message specified by the message URL.'''
     # Handle our error cases first.
     if split == 3:
         # Handle non-url.
@@ -60,11 +74,9 @@ async def pin(ctx, split: split_url):
         # Note: must be in the same server as the caller.
         # Maybe use ctx.message.guild instead, as it's not optional?
         chObj = ctx.guild.get_channel_or_thread(ch)
-    except Exception as e:
+    except:
         # Handle invalid channel id.
         await ctx.send("Error: invalid channel/thread ID!")
-        print(ch)
-        print(e)
         return
     # Check if it's a TextChannel. TODO: make sure this works.
     if not (isinstance(chObj, TextChannel) or isinstance(chObj, Thread)):
@@ -81,15 +93,71 @@ async def pin(ctx, split: split_url):
     # Pin the message.
     try:
         # We say who the pin was requested by.
-        print(type(idObj))
-        await idObj.pin("Requested by: " + ctx.author.name + '#' + ctx.author.discriminator)
-    except:
+        await idObj.pin(reason=("Requested by: " + ctx.author.name + '#' + ctx.author.discriminator))
+    except Exception as e:
         # Handle insufficient perms.
         await ctx.send("Error: cannot pin. Insufficient permissions?")
         return
 
-# Add our command.
+
+# The type hint passes our first argument through the parser+splitter.
+@commands.command()
+async def unpin(ctx, split: split_url):
+    '''Unpins a message specified by the message URL.'''
+    # Handle our error cases first.
+    if split == 3:
+        # Handle non-url.
+        await ctx.send("Error: invalid format! Input must be message URL.")
+        return
+    if split == 2:
+        # Handle insufficient slashes.
+        await ctx.send("Error: insufficient slashes! Input must be message URL.")
+        return
+    if split == 1:
+        # Handle invalid positive ints.
+        await ctx.send("Error: bad IDs! All ids in message URL must be positive ints.")
+        return
+    # Okay, we're past the errors. Unpack that array.
+    sv, ch, id = split
+    try:
+        # Get the channel/thread with this id.
+        # Note: must be in the same server as the caller.
+        # Maybe use ctx.message.guild instead, as it's not optional?
+        chObj = ctx.guild.get_channel_or_thread(ch)
+    except:
+        # Handle invalid channel id.
+        await ctx.send("Error: invalid channel/thread ID!")
+        return
+    # Check if it's a TextChannel. TODO: make sure this works.
+    if not (isinstance(chObj, TextChannel) or isinstance(chObj, Thread)):
+        # Handle non-text channel.
+        await ctx.send("Error: channel is not a text channel or thread!")
+        return
+    # Now for the message itself.
+    try:
+        idObj = await chObj.fetch_message(id)
+    except:
+        # Handle invalid message id.
+        await ctx.send("Error: invalid message id!")
+        return
+    # Pin the message.
+    try:
+        # We say who the pin was requested by.
+        await idObj.unpin(reason=("Requested by: " + ctx.author.name + '#' + ctx.author.discriminator))
+    except Exception as e:
+        # Handle insufficient perms.
+        await ctx.send("Error: cannot pin. Insufficient permissions?")
+        return
+
+
+@commands.command()
+async def help(ctx):
+    ctx.send(help_text)
+
+# Add our commands.
 bot.add_command(pin)
+bot.add_command(unpin)
+bot.add_command(help)
 
 # Run the bot!
 bot.run(token)
