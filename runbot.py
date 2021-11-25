@@ -2,8 +2,13 @@
 from nextcord.ext import commands
 from nextcord import TextChannel, Thread
 
+import os
+
+# Get the full name of the script's containing folder. Modified from: https://stackoverflow.com/a/4060259
+location = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
 # Grab our token from a text file, untracked.
-with open('token.txt', 'r') as f:
+with open(os.path.join(location, 'token.txt'), 'r') as f:
     token = f.read().strip()
 
 bot = commands.Bot(command_prefix='-')
