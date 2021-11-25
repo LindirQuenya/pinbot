@@ -6,18 +6,6 @@ from nextcord import TextChannel, Thread
 with open('token.txt', 'r') as f:
     token = f.read().strip()
 
-help_text = """
-```
-This bot has three commands:
--pin URL    Pins a message, specified by URL.
--unpin URL  Unpilns a message, specified by URL.
--help       Displays this help text.
-
-A message URL may be copied by clicking a message and selecting "Copy Message Link" from the "More" menu.
-From there, just paste it after a -pin or -unpin command, and hit enter. It should pin or unpin the message.
-```
-"""
-
 bot = commands.Bot(command_prefix='-')
 
 # Type hint that url should be a str. This doesn't perform a cast, though.
@@ -51,9 +39,10 @@ def split_url(url: str):
 
 
 # The type hint passes our first argument through the parser+splitter.
-@commands.command()
-async def pin(ctx, split: split_url):
-    '''Unpins a message specified by the message URL.'''
+@bot.command(help='Pins a message specified by the message URL.\nA message URL may be obtained by clicking the "Copy Message Link" button in a message\'s "More" menu.',
+             brief='Pins a message.', usage='URL', name='pin')
+async def pin_msg(ctx, split: split_url):
+    '''Pins a message specified by the message URL.'''
     # Handle our error cases first.
     if split == 3:
         # Handle non-url.
@@ -78,7 +67,7 @@ async def pin(ctx, split: split_url):
         # Handle invalid channel id.
         await ctx.send("Error: invalid channel/thread ID!")
         return
-    # Check if it's a TextChannel. TODO: make sure this works.
+    # Check if it's a TextChannel. TODO: check that threads work.
     if not (isinstance(chObj, TextChannel) or isinstance(chObj, Thread)):
         # Handle non-text channel.
         await ctx.send("Error: channel is not a text channel or thread!")
@@ -101,8 +90,9 @@ async def pin(ctx, split: split_url):
 
 
 # The type hint passes our first argument through the parser+splitter.
-@commands.command()
-async def unpin(ctx, split: split_url):
+@bot.command(help='Unpins a message specified by the message URL.\nA message URL may be obtained by clicking the "Copy Message Link" button in a message\'s "More" menu.',
+             brief='Unpins a message.', usage='URL', name='unpin')
+async def unpin_msg(ctx, split: split_url):
     '''Unpins a message specified by the message URL.'''
     # Handle our error cases first.
     if split == 3:
@@ -149,15 +139,6 @@ async def unpin(ctx, split: split_url):
         await ctx.send("Error: cannot pin. Insufficient permissions?")
         return
 
-
-@commands.command()
-async def help(ctx):
-    ctx.send(help_text)
-
-# Add our commands.
-bot.add_command(pin)
-bot.add_command(unpin)
-bot.add_command(help)
 
 # Run the bot!
 bot.run(token)
