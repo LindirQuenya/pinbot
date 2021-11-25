@@ -37,13 +37,16 @@ def split_url(url: str):
 async def pin(ctx, split: split_url):
     # Handle our error cases first.
     if split == 3:
-        # TODO: Handle non-url.
+        # Handle non-url.
+        ctx.send("Error: invalid format! Input must be message URL.")
         return
     if split == 2:
-        # TODO: Handle insufficient slashes.
+        # Handle insufficient slashes.
+        ctx.send("Error: insufficient slashes! Input must be message URL.")
         return
     if split == 1:
-        # TODO: Handle invalid positive ints.
+        # Handle invalid positive ints.
+        ctx.send("Error: bad IDs! All ids in message URL must be positive ints.")
         return
     # Okay, we're past the errors. Unpack that array.
     ch, th, id = split
@@ -52,11 +55,13 @@ async def pin(ctx, split: split_url):
         # Note: must be in the same server as the caller.
         chObj = ctx.guild.fetch_channel(ch)
     except:
-        # TODO: Handle invalid channel id.
+        # Handle invalid channel id.
+        ctx.send("Error: invalid channel ID!")
         return
     # Check if it's a TextChannel. TODO: make sure this works.
     if not isinstance(chObj, TextChannel)
-        # TODO: Handle non-text channel.
+        # Handle non-text channel.
+        ctx.send("Error: channel is not a text channel!")
         return
     # Check if the thread id is different from the channel id.
     if ch != th:
@@ -64,7 +69,8 @@ async def pin(ctx, split: split_url):
             # We're in a thread.
             thObj = chObj.get_thread(th)
         except:
-            # TODO: Handle invalid thread id.
+            # Handle invalid thread id.
+            ctx.send("Error: invalid thread ID!")
             return
     else:
         # We aren't in a thread, just a TextChannel.
@@ -73,11 +79,14 @@ async def pin(ctx, split: split_url):
     try:
         idObj = thObj.fetch_message(id)
     except:
-        # TODO: Handle invalid message id.
+        # Handle invalid message id.
+        ctx.send("Error: invalid message id!")
         return
     # Pin the message.
     try:
-        idObj.pin()
+        # We say who the pin was requested by.
+        idObj.pin("Requested by: " + ctx.author.name + '#' + ctx.author.discriminator)
     except:
-        # TODO: Handle insufficient perms.
+        # Handle insufficient perms.
+        ctx.send("Error: cannot pin. Insufficient permissions?")
         return
