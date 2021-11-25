@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from discord.ext import commands
+from nextcord.ext import commands
 
 # Grab our token from a text file, untracked.
 with open('token.txt', 'r') as f:
