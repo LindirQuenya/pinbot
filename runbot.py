@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 from discord.ext import commands
 
+# Grab our token from a text file, untracked.
+with open('token.txt', 'r') as f:
+    token = f.read().strip()
+
 bot = commands.Bot(command_prefix='-')
 
 # Type hint that url should be a str. This doesn't perform a cast, though.
@@ -90,3 +94,6 @@ async def pin(ctx, split: split_url):
         # Handle insufficient perms.
         ctx.send("Error: cannot pin. Insufficient permissions?")
         return
+
+# Run the bot!
+bot.run(token)
