@@ -71,9 +71,9 @@ async def pin(ctx, split: split_url):
     if ch != th:
         try:
             # We're in a thread.
-            ctx.send("Error: threads currently unsupported. Wait until pycord 2.0 release.")
-            return
-            #thObj = chObj.get_thread(th)
+            #ctx.send("Error: threads currently unsupported. Wait until pycord 2.0 release.")
+            #return
+            thObj = chObj.get_thread(th)
         except:
             # Handle invalid thread id.
             ctx.send("Error: invalid thread ID!")
