@@ -58,6 +58,7 @@ async def pin(ctx, split: split_url):
     try:
         # Get the channel/thread with this id.
         # Note: must be in the same server as the caller.
+        # Maybe use ctx.message.guild instead, as it's not optional?
         chObj = ctx.guild.get_channel_or_thread(ch)
     except Exception as e:
         # Handle invalid channel id.
