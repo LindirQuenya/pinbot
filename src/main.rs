@@ -18,7 +18,7 @@ lazy_static!{
     static ref URL_RE: Regex = Regex::new(r"^https?://discord.com/channels/([0-9]+)/([0-9]+)/([0-9]+)$").unwrap();
 }
 
-const COMMAND_PREFIX: &str = "~";
+const COMMAND_PREFIX: &str = "-";
 
 #[group]
 #[commands(pin, unpin)]
@@ -39,7 +39,7 @@ enum UrlParseResults {
 #[tokio::main]
 async fn main() {
     let framework = StandardFramework::new()
-        .configure(|c| c.prefix(COMMAND_PREFIX)) // set the bot's prefix to "-"
+        .configure(|c| c.prefix(COMMAND_PREFIX)) // set the bot's prefix
         .group(&GENERAL_GROUP);
 
     // Login with a bot token from the environment
