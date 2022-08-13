@@ -130,3 +130,8 @@ dmypy.json
 
 # Ignore the bot token.
 token.txt
+
+
+# Added by cargo
+
+/target
