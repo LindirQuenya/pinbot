@@ -1,15 +1,16 @@
-# Start off from an image with python preinstalled.
-FROM python:buster
 
+FROM rust:slim-bullseye AS builder
+
+# Copy the needed files over.
+COPY . /pinbot
 # Create and move to a new directory for our project.
 WORKDIR /pinbot
-# Copy the needed files over.
-COPY token.txt token.txt
-COPY runbot.py runbot.py
-COPY requirements.txt requirements.txt
 
-# Install our dependencies.
-RUN pip install -r requirements.txt
+# Build the binary.
+RUN cargo build --release --target x86_64-unknown-linux-gnu
 
-# When run, this is what we execute.
-CMD ["python3", "runbot.py"]
+FROM debian:bullseye-slim AS main
+
+COPY --from=builder /pinbot/target/x86_64-unknown-linux-gnu/release/pinbot /pinbot
+
+CMD /pinbot

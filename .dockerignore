@@ -1,2 +1,4 @@
 # Ignore my testing virtualenv.
 *env
+# Also ignore all target things.
+target
