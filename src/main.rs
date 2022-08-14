@@ -4,15 +4,15 @@ use function_name::named;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serenity::async_trait;
+use serenity::framework::standard::macros::{command, group};
+use serenity::framework::standard::{CommandResult, StandardFramework};
 use serenity::http::Http;
 use serenity::model::id::ChannelId;
-use serenity::prelude::*;
 use serenity::model::prelude::Message;
-use serenity::framework::standard::macros::{command, group};
-use serenity::framework::standard::{StandardFramework, CommandResult};
+use serenity::prelude::*;
 
-lazy_static!{
-    // Match messages of the form 
+lazy_static! {
+    // Match messages of the form
     // 'https://discord.com/channels/{numeric}/{numeric}/{numeric}' and
     // 'http://discord.com/channels/{numeric}/{numeric}/{numeric}'
     static ref URL_RE: Regex = Regex::new(r"^https?://discord.com/channels/([0-9]+)/([0-9]+)/([0-9]+)$").unwrap();
@@ -29,11 +29,10 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {}
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum UrlParseResults {
     Success(u64, u64, u64),
-    Invalid
+    Invalid,
 }
 
 #[tokio::main]
@@ -60,18 +59,20 @@ async fn main() {
 /// Splits a url of the format http[s?]://discord.com/channels/{sv}/{ch}/{id} into {sv}, {ch}, {id}.
 fn validate_url(message: &str) -> UrlParseResults {
     match URL_RE.captures(message) {
-        None => {
-            UrlParseResults::Invalid
-        }, Some(captures) => {
-            UrlParseResults::Success(
-                captures.get(1).unwrap().as_str().parse().unwrap(),
-                captures.get(2).unwrap().as_str().parse().unwrap(),
-                captures.get(3).unwrap().as_str().parse().unwrap())
-        }
+        None => UrlParseResults::Invalid,
+        Some(captures) => UrlParseResults::Success(
+            captures.get(1).unwrap().as_str().parse().unwrap(),
+            captures.get(2).unwrap().as_str().parse().unwrap(),
+            captures.get(3).unwrap().as_str().parse().unwrap(),
+        ),
     }
 }
 
-async fn send_message_print_err(channel_id: ChannelId, http: impl AsRef<Http>, content: impl std::fmt::Display) {
+async fn send_message_print_err(
+    channel_id: ChannelId,
+    http: impl AsRef<Http>,
+    content: impl std::fmt::Display,
+) {
     if let Err(e) = channel_id.say(http, content).await {
         println!("{}", e);
     }
@@ -82,23 +83,20 @@ async fn process_inputs(strip_prefix: &str, ctx: &Context, msg: &Message) -> Opt
         None => {
             send_message_print_err(msg.channel_id, &ctx.http, "Input required: message URL").await;
             None
-        }, Some(url) => {
-            match validate_url(url) {
-                UrlParseResults::Invalid => {
-                    send_message_print_err(msg.channel_id, &ctx.http, "Invalid message URL").await;
-                    None
-                }, UrlParseResults::Success(_, ch, mg) => {
-                    match ctx.http.get_message(ch, mg).await {
-                        Err(_) => {
-                            send_message_print_err(msg.channel_id, &ctx.http, "Couldn't get message").await;
-                            None
-                        }, Ok(message) => {
-                            Some(message)
-                        }
-                    }
-                }
-            }
         }
+        Some(url) => match validate_url(url) {
+            UrlParseResults::Invalid => {
+                send_message_print_err(msg.channel_id, &ctx.http, "Invalid message URL").await;
+                None
+            }
+            UrlParseResults::Success(_, ch, mg) => match ctx.http.get_message(ch, mg).await {
+                Err(_) => {
+                    send_message_print_err(msg.channel_id, &ctx.http, "Couldn't get message").await;
+                    None
+                }
+                Ok(message) => Some(message),
+            },
+        },
     }
 }
 
@@ -132,8 +130,8 @@ async fn unpin(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[cfg(test)]
 mod url_validation_test {
-    use super::*;
     use super::UrlParseResults::*;
+    use super::*;
 
     #[test]
     fn good_https() {
@@ -158,7 +156,7 @@ mod url_validation_test {
             Invalid
         );
     }
-    
+
     #[test]
     fn suffix() {
         assert_eq!(
@@ -182,7 +180,7 @@ mod url_validation_test {
             Invalid
         );
     }
-    
+
     #[test]
     fn nonsense() {
         assert_eq!(validate_url("not a url at all"), Invalid);
@@ -190,12 +188,18 @@ mod url_validation_test {
 
     #[test]
     fn non_numeric() {
-        assert_eq!(validate_url("https://discord.com/channels/039/not/numeric"), Invalid);
+        assert_eq!(
+            validate_url("https://discord.com/channels/039/not/numeric"),
+            Invalid
+        );
     }
 
     #[test]
     fn not_enough_segments() {
-        assert_eq!(validate_url("https://discord.com/channels/432708847304704010/43"), Invalid);
+        assert_eq!(
+            validate_url("https://discord.com/channels/432708847304704010/43"),
+            Invalid
+        );
     }
 
     #[test]
