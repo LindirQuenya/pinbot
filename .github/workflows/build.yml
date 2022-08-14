@@ -53,12 +53,12 @@ jobs:
       - name: Grab commit SHA.
         id: prepare
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-      - name: Build for docker
+      - name: Build for FreeBSD
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --release --target x86_64-unknown-freebsd
-      - name: Build for QEMU
+      - name: Build for Linux
         uses: actions-rs/cargo@v1
         with:
           command: build
