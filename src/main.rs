@@ -29,12 +29,6 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {}
 
-#[derive(Debug, PartialEq)]
-enum UrlParseResults {
-    Success(u64, u64, u64),
-    Invalid,
-}
-
 #[tokio::main]
 async fn main() {
     let framework = StandardFramework::new()
@@ -57,14 +51,14 @@ async fn main() {
 }
 
 /// Splits a url of the format http[s?]://discord.com/channels/{sv}/{ch}/{id} into {sv}, {ch}, {id}.
-fn validate_url(message: &str) -> UrlParseResults {
+fn parse_url(message: &str) -> Option<(u64, u64, u64)> {
     match URL_RE.captures(message) {
-        None => UrlParseResults::Invalid,
-        Some(captures) => UrlParseResults::Success(
-            captures.get(1).unwrap().as_str().parse().unwrap(),
-            captures.get(2).unwrap().as_str().parse().unwrap(),
-            captures.get(3).unwrap().as_str().parse().unwrap(),
-        ),
+        None => None,
+        Some(captures) => Some((
+            captures.get(1)?.as_str().parse().ok()?,
+            captures.get(2)?.as_str().parse().ok()?,
+            captures.get(3)?.as_str().parse().ok()?,
+        )),
     }
 }
 
@@ -84,12 +78,12 @@ async fn process_inputs(strip_prefix: &str, ctx: &Context, msg: &Message) -> Opt
             send_message_print_err(msg.channel_id, &ctx.http, "Input required: message URL").await;
             None
         }
-        Some(url) => match validate_url(url) {
-            UrlParseResults::Invalid => {
+        Some(url) => match parse_url(url) {
+            None => {
                 send_message_print_err(msg.channel_id, &ctx.http, "Invalid message URL").await;
                 None
             }
-            UrlParseResults::Success(_, ch, mg) => match ctx.http.get_message(ch, mg).await {
+            Some((_, ch, mg)) => match ctx.http.get_message(ch, mg).await {
                 Err(_) => {
                     send_message_print_err(msg.channel_id, &ctx.http, "Couldn't get message").await;
                     None
@@ -103,7 +97,6 @@ async fn process_inputs(strip_prefix: &str, ctx: &Context, msg: &Message) -> Opt
 #[named]
 #[command]
 async fn pin(ctx: &Context, msg: &Message) -> CommandResult {
-    //println!("{:?}", msg);
     let strip_prefix = COMMAND_PREFIX.to_owned() + function_name!() + " ";
 
     if let Some(message) = process_inputs(&strip_prefix, ctx, msg).await {
@@ -117,7 +110,6 @@ async fn pin(ctx: &Context, msg: &Message) -> CommandResult {
 #[named]
 #[command]
 async fn unpin(ctx: &Context, msg: &Message) -> CommandResult {
-    //println!("{:?}", msg);
     let strip_prefix = COMMAND_PREFIX.to_owned() + function_name!() + " ";
 
     if let Some(message) = process_inputs(&strip_prefix, ctx, msg).await {
@@ -130,80 +122,79 @@ async fn unpin(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[cfg(test)]
 mod url_validation_test {
-    use super::UrlParseResults::*;
     use super::*;
 
     #[test]
     fn good_https() {
         assert_eq!(
-            validate_url("https://discord.com/channels/432708847304704010/432708847304704013/1008041568613191813"), 
-            Success(432708847304704010, 432708847304704013, 1008041568613191813)
+            parse_url("https://discord.com/channels/432708847304704010/432708847304704013/1008041568613191813"), 
+            Some((432708847304704010, 432708847304704013, 1008041568613191813))
         );
     }
 
     #[test]
     fn good_http() {
         assert_eq!(
-            validate_url("http://discord.com/channels/432708847304704010/432708847304704013/1008041568613191813"), 
-            Success(432708847304704010, 432708847304704013, 1008041568613191813)
+            parse_url("http://discord.com/channels/432708847304704010/432708847304704013/1008041568613191813"), 
+            Some((432708847304704010, 432708847304704013, 1008041568613191813))
         );
     }
 
     #[test]
     fn prefix() {
         assert_eq!(
-            validate_url("prefixhttps://discord.com/channels/432708847304704010/432708847304704013/1008041568613191813"),
-            Invalid
+            parse_url("prefixhttps://discord.com/channels/432708847304704010/432708847304704013/1008041568613191813"),
+            None
         );
     }
 
     #[test]
     fn suffix() {
         assert_eq!(
-            validate_url("https://discord.com/channels/432708847304704010/432708847304704013/1008041568613191813suffix"),
-            Invalid
+            parse_url("https://discord.com/channels/432708847304704010/432708847304704013/1008041568613191813suffix"),
+            None
         );
     }
 
     #[test]
     fn protocol() {
         assert_eq!(
-            validate_url("ftp://discord.com/channels/432708847304704010/432708847304704013/1008041568613191813"),
-            Invalid
+            parse_url("ftp://discord.com/channels/432708847304704010/432708847304704013/1008041568613191813"),
+            None
         );
     }
 
     #[test]
     fn endpoint() {
         assert_eq!(
-            validate_url("https://discord.com/nonsense/432708847304704010/432708847304704013/1008041568613191813"),
-            Invalid
+            parse_url("https://discord.com/nonsense/432708847304704010/432708847304704013/1008041568613191813"),
+            None
         );
     }
 
     #[test]
     fn nonsense() {
-        assert_eq!(validate_url("not a url at all"), Invalid);
+        assert_eq!(parse_url("not a url at all"), None);
     }
 
     #[test]
     fn non_numeric() {
         assert_eq!(
-            validate_url("https://discord.com/channels/039/not/numeric"),
-            Invalid
+            parse_url("https://discord.com/channels/039/not/numeric"),
+            None
         );
     }
 
     #[test]
     fn not_enough_segments() {
         assert_eq!(
-            validate_url("https://discord.com/channels/432708847304704010/43"),
-            Invalid
+            parse_url("https://discord.com/channels/432708847304704010/43"),
+            None
         );
     }
 
     #[test]
     fn empty() {
-        assert_eq!(validate_url("https://discord.com/channels///"), Invalid);
+        assert_eq!(parse_url("https://discord.com/channels///"), None);
     }
 }
