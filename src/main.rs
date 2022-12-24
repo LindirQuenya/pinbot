@@ -95,12 +95,8 @@ async fn process_inputs(strip_prefix: &str, ctx: &Context, msg: &Message) -> Opt
                         return None;
                     }
                     Some(guild_id) if guild_id != sv => {
-                        send_message_print_err(
-                            msg.channel_id,
-                            &ctx.http,
-                            "No. Absolutely not.",
-                        )
-                        .await;
+                        send_message_print_err(msg.channel_id, &ctx.http, "No. Absolutely not.")
+                            .await;
                         return None;
                     }
                     _ => {}
