@@ -44,20 +44,9 @@ jobs:
           components: rustfmt, clippy
           target: x86_64-unknown-linux-gnu
           default: true
-      - name: Install latest stable Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-          target: x86_64-unknown-freebsd
       - name: Grab commit SHA.
         id: prepare
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-      - name: Build for FreeBSD
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target x86_64-unknown-freebsd
       - name: Build for Linux
         uses: actions-rs/cargo@v1
         with:
@@ -73,15 +62,6 @@ jobs:
           release_name: ${{ steps.prepare.outputs.sha_short }}
           draft: false
           prerelease: false
-      - name: Upload release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/x86_64-unknown-freebsd/release/pinbot
-          asset_name: pinbot_x86_64-unknown-freebsd
-          asset_content_type: application/octet-stream
       - name: Upload release
         uses: actions/upload-release-asset@v1
         env:
