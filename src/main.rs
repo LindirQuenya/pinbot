@@ -83,13 +83,37 @@ async fn process_inputs(strip_prefix: &str, ctx: &Context, msg: &Message) -> Opt
                 send_message_print_err(msg.channel_id, &ctx.http, "Invalid message URL").await;
                 None
             }
-            Some((_, ch, mg)) => match ctx.http.get_message(ch, mg).await {
-                Err(_) => {
-                    send_message_print_err(msg.channel_id, &ctx.http, "Couldn't get message").await;
-                    None
+            Some((sv, ch, mg)) => {
+                match msg.guild_id {
+                    None => {
+                        send_message_print_err(
+                            msg.channel_id,
+                            &ctx.http,
+                            "Message sent outside of guild?",
+                        )
+                        .await;
+                        return None;
+                    }
+                    Some(guild_id) if guild_id != sv => {
+                        send_message_print_err(
+                            msg.channel_id,
+                            &ctx.http,
+                            "No. Absolutely not.",
+                        )
+                        .await;
+                        return None;
+                    }
+                    _ => {}
                 }
-                Ok(message) => Some(message),
-            },
+                match ctx.http.get_message(ch, mg).await {
+                    Err(_) => {
+                        send_message_print_err(msg.channel_id, &ctx.http, "Couldn't get message")
+                            .await;
+                        None
+                    }
+                    Ok(message) => Some(message),
+                }
+            }
         },
     }
 }
